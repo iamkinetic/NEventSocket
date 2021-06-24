@@ -9,7 +9,7 @@ namespace NEventSocket.FreeSwitch
     using System;
     using System.Collections.Generic;
     using System.Linq;
-
+    using System.Text;
     using NEventSocket.Util;
     using NEventSocket.Util.ObjectPooling;
 
@@ -25,10 +25,11 @@ namespace NEventSocket.FreeSwitch
             Headers = new Dictionary<string, string>(headers, StringComparer.OrdinalIgnoreCase);
         }
 
-        internal BasicMessage(IDictionary<string, string> headers, string body)
+        internal BasicMessage(IDictionary<string, string> headers, byte[] bodyBytes)
         {
             Headers = new Dictionary<string, string>(headers, StringComparer.OrdinalIgnoreCase);
-            BodyText = body;
+            BodyText = Encoding.UTF8.GetString(bodyBytes);
+            BodyBytes = bodyBytes;
         }
 
         /// <summary>
@@ -47,6 +48,8 @@ namespace NEventSocket.FreeSwitch
         /// Gets any body text, if any, contained in the Message.
         /// </summary>
         public string BodyText { get; protected set; }
+
+        public byte[] BodyBytes { get; protected set; }
 
         /// <summary>
         /// Gets the Content Type header.

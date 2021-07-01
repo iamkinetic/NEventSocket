@@ -50,8 +50,8 @@ namespace NEventSocket.Sockets
             ResponseTimeOut = responseTimeOut ?? TimeSpan.FromSeconds(5);
 
             messages =
-                Receiver.SelectMany(x => Encoding.UTF8.GetString(x))
-                    .AggregateUntil(() => new Parser(), (builder, ch) => builder.Append(ch), builder => builder.Completed)
+                Receiver.SelectMany(x => x)
+                    .AggregateUntil(() => new Parser(), (builder, b) => builder.Append(b), builder => builder.Completed)
                     .Select(builder => builder.ExtractMessage())
                     .Do(
                         x => Log.LogTrace("Messages Received [{0}].".Fmt(x.ContentType)),

@@ -7,9 +7,10 @@
 namespace NEventSocket.FreeSwitch
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-
+    using System.Text;
     using Microsoft.Extensions.Logging;
 
     using NEventSocket.Logging;
@@ -22,6 +23,7 @@ namespace NEventSocket.FreeSwitch
     [Serializable]
     public class EventMessage : BasicMessage
     {
+        public static readonly byte[] delimiterBytes = Encoding.UTF8.GetBytes("\n\n");
         private static readonly ILogger log = Logger.Get<EventMessage>();
 
         internal EventMessage(BasicMessage basicMessage)
@@ -60,8 +62,8 @@ namespace NEventSocket.FreeSwitch
 
             try
             {
-                var delimiterIndex = basicMessage.BodyText.IndexOf("\n\n", StringComparison.Ordinal);
-                if (delimiterIndex == -1 || delimiterIndex == basicMessage.BodyText.Length - 2)
+                var delimiterIndex = PatternAt(basicMessage.BodyBytes, delimiterBytes);
+                if (delimiterIndex == -1 || delimiterIndex == basicMessage.BodyBytes.Length - 2)
                 {
                     // body text consists of key-value-pair event headers, no body
                     Headers = basicMessage.BodyText.ParseKeyValuePairs(": ");
@@ -71,13 +73,16 @@ namespace NEventSocket.FreeSwitch
                 {
                     // ...but some Event Messages also carry a body payload, eg. a BACKGROUND_JOB event
                     // which is a message carried inside an EventMessage carried inside a BasicMessage..
-                    Headers = basicMessage.BodyText.Substring(0, delimiterIndex).ParseKeyValuePairs(": ");
+                    string headersSection = Encoding.UTF8.GetString(basicMessage.BodyBytes, 0, delimiterIndex);
+                    Headers = headersSection.ParseKeyValuePairs(": ");
 
                     Debug.Assert(Headers.ContainsKey(HeaderNames.ContentLength));
                     var contentLength = int.Parse(Headers[HeaderNames.ContentLength]);
 
-                    Debug.Assert(delimiterIndex + 2 + contentLength <= basicMessage.BodyText.Length, "Message cut off mid-transmission");
-                    var body = basicMessage.BodyText.Substring(delimiterIndex + 2, contentLength);
+                    Debug.Assert(Headers.ContainsKey(HeaderNames.EventName));
+
+                    Debug.Assert(delimiterIndex + 2 + contentLength <= basicMessage.BodyBytes.Length, "Message cut off mid-transmission");
+                    var body = Encoding.UTF8.GetString(basicMessage.BodyBytes, delimiterIndex + 2, contentLength);
 
                     //remove any \n\n if any
                     var index = body.IndexOf("\n\n", StringComparison.Ordinal);
@@ -97,6 +102,18 @@ namespace NEventSocket.FreeSwitch
         /// </summary>
         protected EventMessage()
         {
+        }
+
+        private static int PatternAt(byte[] source, byte[] pattern)
+        {
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source.Skip(i).Take(pattern.Length).SequenceEqual(pattern))
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         /// <summary>

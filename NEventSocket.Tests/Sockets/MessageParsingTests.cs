@@ -1,24 +1,41 @@
 ﻿using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using NEventSocket.FreeSwitch;
+using NEventSocket.Logging;
 using NEventSocket.Sockets;
 using NEventSocket.Tests.Properties;
 using NEventSocket.Tests.TestSupport;
 using NEventSocket.Util;
 using Xunit;
 
+using Microsoft.Extensions.Logging;
+
 namespace NEventSocket.Tests.Sockets
 {
     public class MessageParsingTests
     {
-        [Theory, MemberData(nameof(ExampleMessages))]
+        public MessageParsingTests()
+        {
+            PreventThreadPoolStarvation.Init();
+            Logger.Configure(LoggerFactory.Create(builder =>
+            {
+                builder
+                    .AddFilter("Microsoft", LogLevel.Warning)
+                    .AddFilter("System", LogLevel.Warning)
+                    .AddFilter("LoggingConsoleApp.Program", LogLevel.Debug)
+                    .AddConsole();
+            }));
+        }
+
+[Theory, MemberData(nameof(ExampleMessages))]
         public void it_should_parse_the_expected_messages_from_a_stream(int expectedMessageCount, string exampleInput)
         {
             int parsedMessageCount = 0;
-
-            exampleInput.ToObservable()
-                        .AggregateUntil(() => new Parser(), (builder, ch) => builder.Append(ch), builder => builder.Completed)
+            byte[] exampleByteInput = Encoding.UTF8.GetBytes(exampleInput);
+            exampleByteInput.ToObservable()
+                        .AggregateUntil(() => new Parser(), (builder, b) => builder.Append(b), builder => builder.Completed)
                         .Select(parser => parser.ExtractMessage())
                         .Subscribe(_ => parsedMessageCount++);
 
@@ -31,14 +48,17 @@ namespace NEventSocket.Tests.Sockets
         [InlineData(TestMessages.ConnectEvent)]
         [InlineData(TestMessages.DisconnectEvent)]
         [InlineData(TestMessages.PlaybackComplete)]
+        [InlineData(TestMessages.DetectedSpeech)]
+        [InlineData(TestMessages.DetectedSpeechEnglish)]
         public void can_parse_test_messages(string input)
         {
             var parser = new Parser();
             var rawInput = input.Replace("\r\n", "\n") + "\n\n";
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
 
-            foreach (char c in rawInput)
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
 
             Assert.True(parser.Completed);
@@ -51,13 +71,17 @@ namespace NEventSocket.Tests.Sockets
         [Theory]
         [InlineData(TestMessages.BackgroundJob)]
         [InlineData(TestMessages.CallState)]
+        [InlineData(TestMessages.DetectedSpeech)]
+        [InlineData(TestMessages.DetectedSpeechEnglish)]
         public void it_should_extract_the_body_from_a_message(string input)
         {
             var parser = new Parser();
             var rawInput = input.Replace("\r\n", "\n") + "\n\n";
-            foreach (char c in rawInput)
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
+
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
 
             Assert.True(parser.Completed);
@@ -65,7 +89,7 @@ namespace NEventSocket.Tests.Sockets
             BasicMessage payload = parser.ExtractMessage();
             Assert.Equal(ContentTypes.EventPlain, payload.ContentType);
             Assert.NotNull(payload.BodyText);
-            Assert.Equal(payload.ContentLength, payload.BodyText.Length);
+            Assert.Equal(payload.ContentLength, payload.BodyBytes.Length);
 
             Console.WriteLine(payload.ToString());
         }
@@ -73,13 +97,17 @@ namespace NEventSocket.Tests.Sockets
         [Theory]
         [InlineData(TestMessages.BackgroundJob, EventName.BackgroundJob)]
         [InlineData(TestMessages.CallState, EventName.ChannelCallstate)]
+        [InlineData(TestMessages.DetectedSpeech, EventName.DetectedSpeech)]
+        [InlineData(TestMessages.DetectedSpeechEnglish, EventName.DetectedSpeech)]
         public void it_should_parse_event_messages(string input, EventName eventName)
         {
             var parser = new Parser();
             var rawInput = input.Replace("\r\n", "\n") + "\n\n";
-            foreach (char c in rawInput)
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
+
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
 
             Assert.True(parser.Completed);
@@ -91,16 +119,44 @@ namespace NEventSocket.Tests.Sockets
             Console.WriteLine(eventMessage.ToString());
         }
 
+        [Theory]
+        [InlineData(TestMessages.DetectedSpeech, EventName.DetectedSpeech)]
+        [InlineData(TestMessages.DetectedSpeechEnglish, EventName.DetectedSpeech)]
+        public void it_should_parse_event_messages_and_extract_body_payload(string input, EventName eventName)
+        {
+            var parser = new Parser();
+            var rawInput = input.Replace("\r\n", "\n") + "\n\n";
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
+
+            foreach (byte b in byteInput)
+            {
+                parser.Append(b);
+            }
+
+            Assert.True(parser.Completed);
+
+            var eventMessage = new EventMessage(parser.ExtractMessage());
+            Assert.NotNull(eventMessage);
+            Assert.Equal(eventName, eventMessage.EventName);
+
+            var contentLength = int.Parse(eventMessage.Headers[HeaderNames.ContentLength]);
+
+            Assert.Equal(contentLength, Encoding.UTF8.GetByteCount(eventMessage.BodyText));
+
+            Console.WriteLine(eventMessage.ToString());
+        }
+
         [Fact]
         public void it_should_parse_BackgroundJobResult_OK()
         {
             var input = TestMessages.BackgroundJob;
             var parser = new Parser();
             var rawInput = input.Replace("\r\n", "\n") + "\n\n";
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
 
-            foreach (char c in rawInput)
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
 
             Assert.True(parser.Completed);
@@ -118,10 +174,11 @@ namespace NEventSocket.Tests.Sockets
             var input = TestMessages.BackgroundJobError;
             var parser = new Parser();
             var rawInput = input.Replace("\r\n", "\n") + "\n\n";
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
 
-            foreach (char c in rawInput)
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
 
             Assert.True(parser.Completed);
@@ -139,10 +196,11 @@ namespace NEventSocket.Tests.Sockets
         {
             var parser = new Parser();
             var rawInput = "Content-Type: command/reply\nReply-Text: +OK\n\n";
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
 
-            foreach (char c in rawInput)
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
             
             Assert.True(parser.Completed);
@@ -159,10 +217,11 @@ namespace NEventSocket.Tests.Sockets
         {
             var parser = new Parser();
             var rawInput = "Content-Type: command/reply\nReply-Text: -ERR Error\n\n";
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
 
-            foreach (char c in rawInput)
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
 
             Assert.True(parser.Completed);
@@ -180,10 +239,11 @@ namespace NEventSocket.Tests.Sockets
         {
             var parser = new Parser();
             var rawInput = "Content-Type: api/response\nContent-Length: 3\n\n+OK";
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
 
-            foreach (char c in rawInput)
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
 
             Assert.True(parser.Completed);
@@ -200,10 +260,11 @@ namespace NEventSocket.Tests.Sockets
         {
             var parser = new Parser();
             var rawInput = "Content-Type: api/response\nContent-Length: 10\n\n-ERR Error";
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
 
-            foreach (char c in rawInput)
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
 
             Assert.True(parser.Completed);
@@ -221,10 +282,11 @@ namespace NEventSocket.Tests.Sockets
         {
             var parser = new Parser();
             var rawInput = "Content-Type: api/response\nContent-Length: 13\n\n-ERR no reply";
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
 
-            foreach (char c in rawInput)
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
 
             Assert.True(parser.Completed);
@@ -242,10 +304,11 @@ namespace NEventSocket.Tests.Sockets
         {
             var parser = new Parser();
             var rawInput = "Content-Type: api/response\nContent-Length: 14\n\n-ERR no reply\n";
+            byte[] byteInput = Encoding.UTF8.GetBytes(rawInput);
 
-            foreach (char c in rawInput)
+            foreach (byte b in byteInput)
             {
-                parser.Append(c);
+                parser.Append(b);
             }
 
             Assert.True(parser.Completed);
@@ -269,9 +332,10 @@ namespace NEventSocket.Tests.Sockets
             }
 
             bool gotDisconnectNotice = false;
+            byte[] byteInput = Encoding.UTF8.GetBytes(input);
 
-            input.ToObservable()
-                .AggregateUntil(() => new Parser(), (builder, ch) => builder.Append(ch), builder => builder.Completed)
+            byteInput.ToObservable()
+                .AggregateUntil(() => new Parser(), (builder, b) => builder.Append(b), builder => builder.Completed)
                 .Select(parser => parser.ExtractMessage())
                 .Subscribe(
                     m =>
@@ -297,8 +361,9 @@ Content-Length: 67
 Disconnected, goodbye.
 See you at ClueCon! http://www.cluecon.com/
 ";
-            msg.ToObservable()
-                .AggregateUntil(() => new Parser(), (builder, ch) => builder.Append(ch), builder => builder.Completed)
+            byte[] byteMsg = Encoding.UTF8.GetBytes(msg);
+            byteMsg.ToObservable()
+                .AggregateUntil(() => new Parser(), (builder, b) => builder.Append(b), builder => builder.Completed)
                          .Select(parser => parser.ExtractMessage())
                          .Subscribe(
                              Console.WriteLine);

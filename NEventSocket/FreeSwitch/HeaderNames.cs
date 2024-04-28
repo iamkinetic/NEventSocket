@@ -87,6 +87,39 @@ namespace NEventSocket.FreeSwitch
 
             public const string Action = "Action";
         }
+
+        public static class VoiceMail
+        {
+            public const string Action = "VM-Action";
+
+            public const string User = "VM-User";
+            
+            public const string Domain = "VM-Domain";
+            
+            public const string TotalNew = "VM-Total-New";
+            
+            public const string TotalSaved = "VM-Total-Saved";
+            
+            public const string TotalNewUrgent = "VM-Total-New-Urgent";
+            
+            public const string TotalSavedUrgent = "VM-Total-Saved-Urgent";
+
+            public const string CallerIdName = "VM-Caller-ID-Name";
+
+            public const string CallerIdNumber = "VM-Caller-ID-Number";
+
+            public const string Folder = "VM-Folder";
+
+            public const string FilePath = "VM-File-Path";
+
+            public const string Flags = "VM-Flags";
+
+            public const string Uuid = "VM-UUID";
+
+            public const string MessageLength = "VM-Message-Len";
+
+            public const string Timestamp = "VM-Timestamp";
+        }
 #pragma warning restore 1591
     }
 }

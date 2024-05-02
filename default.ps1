@@ -38,10 +38,10 @@ task Compile {
 }
 
 task RunTests -depends Compile {
-  New-Item "\$project" -Type Directory -ErrorAction SilentlyContinue
+  New-Item "$reportsDir\xUnit\$project\" -Type Directory -ErrorAction SilentlyContinue
 
   #if (!($is_appveyor_build)){
-    exec { & dotnet test -c Release -r "\$project"}
+    exec { & dotnet test -c Release -r "$reportsDir\xUnit\$project"}
   #}
 }
 

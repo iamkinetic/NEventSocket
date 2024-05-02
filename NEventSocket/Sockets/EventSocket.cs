@@ -110,6 +110,19 @@ namespace NEventSocket.Sockets
         }
 
         /// <summary>
+        /// Gets an observable sequence of <seealso cref="VoiceMailEvent"/>
+        /// </summary>
+        public IObservable<VoiceMailEvent> VoiceMailEvents
+        {
+            get
+            {
+                return
+                    Events.Where(x => x.EventName == EventName.Custom && x.Headers[HeaderNames.EventSubclass] == CustomEvents.VoiceMail.Maintenance)
+                          .Select(x => new VoiceMailEvent(x));
+            }
+        }
+
+        /// <summary>
         /// Gets an observable sequence of <seealso cref="ConferenceEvent"/>.
         /// </summary>
         public IObservable<ConferenceEvent> ConferenceEvents

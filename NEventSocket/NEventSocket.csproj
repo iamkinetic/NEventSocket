@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>BSN.NEventSocket.DotNetCore</PackageId>
+    <PackageId>NEventSocket.DotNetCore</PackageId>
     <Authors>iamkinetic</Authors>
     <Company>iamkinetic</Company>
     <Product>NEventSocket.DotNetCore</Product>

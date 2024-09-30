@@ -30,7 +30,7 @@ namespace NEventSocket.Sockets
     /// </summary>
     public abstract class EventSocket : ObservableSocket
     {
-        private readonly ILogger Log;
+        private readonly ILogger log;
         // minimum events required for this class to do its job
         private readonly HashSet<EventName> subscribedEvents = new HashSet<EventName>();
         private readonly HashSet<string> customEvents = new HashSet<string>();
@@ -46,21 +46,21 @@ namespace NEventSocket.Sockets
         /// <param name="responseTimeOut">(Optional) The response timeout.</param>
         protected EventSocket(TcpClient tcpClient, TimeSpan? responseTimeOut = null) : base(tcpClient)
         {
-            Log = Logger.Get<EventSocket>();
+            log = Logger.Get<EventSocket>();
             ResponseTimeOut = responseTimeOut ?? TimeSpan.FromSeconds(5);
 
             this.messages = this.Receiver
-                .SelectMany<byte[], char>(x => (IEnumerable<char>)Encoding.UTF8.GetString(x))
+                .SelectMany(x => (IEnumerable<char>)Encoding.UTF8.GetString(x))
                 .AggregateUntil<char, Parser>(
                     () => new Parser(),
                     (builder, ch) => builder.Append(ch),
                     builder => builder.Completed)
-                .Select<Parser, BasicMessage>(builder => builder.ExtractMessage())
-                .Do<BasicMessage>(
-                    x => this.Log.LogTrace("Messages Received [{0}].".Fmt(x.ContentType)),
+                .Select(builder => builder.ExtractMessage())
+                .Do(
+                    x => this.log.LogTrace("Messages Received [{0}].".Fmt(x.ContentType)),
                     ex =>
                     {
-                        this.Log.LogError(ex, "Error occurred in EventSocket.");
+                        this.log.LogError(ex, "Error occurred in EventSocket.");
 
                         this.Dispose();
 
@@ -68,14 +68,14 @@ namespace NEventSocket.Sockets
                     },
                     () =>
                     {
-                        this.Log.LogDebug("Messages Observable completed.");
+                        this.log.LogDebug("Messages Observable completed.");
                         this.Dispose();
                     })
-                .ObserveOn<BasicMessage>((IScheduler)Scheduler.Immediate)
+                .ObserveOn(Scheduler.Immediate)
                 .Publish<BasicMessage>()
-                .RefCount<BasicMessage>();
+                .RefCount();
 
-            Log.LogTrace("EventSocket initialized");
+            log.LogTrace("EventSocket initialized");
         }
 
         public long Id
@@ -144,7 +144,7 @@ namespace NEventSocket.Sockets
 
             using (var asyncLock = await gate.LockAsync().ConfigureAwait(false))
             {
-                Log.LogTrace("Sending [api {0}]".Fmt(command));
+                log.LogTrace("Sending [api {0}]".Fmt(command));
                 var tcs = new TaskCompletionSource<ApiResponse>();
                 var subscriptions = new CompositeDisposable { cts.Token.Register(() => tcs.TrySetCanceled()) };
 
@@ -160,14 +160,14 @@ namespace NEventSocket.Sockets
                                     if (m.Success && command.StartsWith("uuid_dump"))
                                     {
                                         //we don't need to dump the entire response to the logs
-                                        Log.Log(logLevel, "ApiResponse received CHANNEL_DATA for [{0}]".Fmt(command));
+                                        log.Log(logLevel, "ApiResponse received CHANNEL_DATA for [{0}]".Fmt(command));
                                     }
                                     else
                                     {
-                                        Log.Log(logLevel, "ApiResponse received [{0}] for [{1}]".Fmt(m.BodyText.Replace("\n", string.Empty), command));
+                                        log.Log(logLevel, "ApiResponse received [{0}] for [{1}]".Fmt(m.BodyText.Replace("\n", string.Empty), command));
                                     }
                                 },
-                                ex => Log.LogError(ex, "Error waiting for Api Response to [{0}].".Fmt(command)))
+                                ex => log.LogError(ex, "Error waiting for Api Response to [{0}].".Fmt(command)))
                                 .Subscribe(x => tcs.TrySetResult(x), ex => tcs.TrySetException(ex), subscriptions.Dispose));
 
                 await
@@ -191,7 +191,7 @@ namespace NEventSocket.Sockets
         {
             using (var asyncLock = await gate.LockAsync().ConfigureAwait(false))
             {
-                Log.LogTrace("Sending [{0}]".Fmt(command));
+                log.LogTrace("Sending [{0}]".Fmt(command));
                 var tcs = new TaskCompletionSource<CommandReply>();
                 var subscriptions = new CompositeDisposable { cts.Token.Register(() => tcs.TrySetCanceled()) };
 
@@ -203,9 +203,9 @@ namespace NEventSocket.Sockets
                                 result =>
                                     {
                                         var logLevel = result.Success ? LogLevel.Debug : LogLevel.Error;
-                                        Log.Log(logLevel,"CommandReply received [{0}] for [{1}]".Fmt(result.ReplyText.Replace("\n", string.Empty), command));
+                                        log.Log(logLevel,"CommandReply received [{0}] for [{1}]".Fmt(result.ReplyText.Replace("\n", string.Empty), command));
                                     },
-                                ex => Log.LogError(ex, "Error waiting for Command Reply to [{0}].".Fmt(command)))
+                                ex => log.LogError(ex, "Error waiting for Command Reply to [{0}].".Fmt(command)))
                             .Subscribe(x => tcs.TrySetResult(x), ex => tcs.TrySetException(ex), subscriptions.Dispose));
 
                 await
@@ -228,7 +228,7 @@ namespace NEventSocket.Sockets
         /// <param name="applicationArguments">(Optional) arguments to pass to the application.</param>
         /// <param name="eventLock">(Default: false) Whether to block the socket until the application completes before processing further.
         ///  (see https://wiki.freeswitch.org/wiki/Event_Socket_Outbound#Q:_Ordering_and_async_keyword )</param>
-        /// <param name="async">(Default: false) Whether to return control from the application immediately. 
+        /// <param name="isAsync">(Default: false) Whether to return control from the application immediately. 
         /// (see https://wiki.freeswitch.org/wiki/Event_Socket_Outbound#Q:_Should_I_use_sync_mode_or_async_mode.3F)
         /// </param>
         /// <param name="loops">(Optional) How many times to repeat the application.</param>
@@ -237,7 +237,7 @@ namespace NEventSocket.Sockets
         /// The Task result will be null if the application did not execute, for example, the socket disconnected or the channel was hung up.
         /// </returns>
         public Task<ChannelEvent> ExecuteApplication(
-            string uuid, string application, string applicationArguments = null, bool eventLock = false, bool async = false, int loops = 1)
+            string uuid, string application, string applicationArguments = null, bool eventLock = false, bool isAsync = false, int loops = 1)
         {
             if (uuid == null)
             {
@@ -250,10 +250,10 @@ namespace NEventSocket.Sockets
             }
 
             //lists.freeswitch.org/pipermail/freeswitch-users/2013-May/095329.html
-            var applicationUUID = Guid.NewGuid().ToString();
+            var applicationUuid = Guid.NewGuid().ToString();
 
             var sb = StringBuilderPool.Allocate();
-            sb.AppendFormat("sendmsg {0}\nEvent-UUID: {1}\ncall-command: execute\nexecute-app-name: {2}\n", uuid, applicationUUID, application);
+            sb.AppendFormat("sendmsg {0}\nEvent-UUID: {1}\ncall-command: execute\nexecute-app-name: {2}\n", uuid, applicationUuid, application);
 
             if (eventLock)
             {
@@ -265,9 +265,9 @@ namespace NEventSocket.Sockets
                 sb.Append("loops: " + loops + "\n");
             }
 
-            if (async)
+            if (isAsync)
             {
-                sb.Append("async: true\n");
+                sb.Append("isAsync: true\n");
             }
 
             if (applicationArguments != null)
@@ -285,14 +285,14 @@ namespace NEventSocket.Sockets
 
             subscriptions.Add(
                 ChannelEvents.Where(
-                    x => x.EventName == EventName.ChannelExecuteComplete && x.Headers["Application-UUID"] == applicationUUID)
+                    x => x.EventName == EventName.ChannelExecuteComplete && x.Headers["Application-UUID"] == applicationUuid)
                     .Take(1)
                     .Subscribe(
                         executeCompleteEvent =>
                             {
                                 if (executeCompleteEvent != null)
                                 {
-                                    Log.LogDebug(
+                                    log.LogDebug(
                                         "{0} ChannelExecuteComplete [{1} {2} {3}]".Fmt(
                                             executeCompleteEvent.UUID,
                                             executeCompleteEvent.AnswerState,
@@ -301,7 +301,7 @@ namespace NEventSocket.Sockets
                                 }
                                 else
                                 {
-                                    Log.LogTrace("No ChannelExecuteComplete event received for {0}".Fmt(application));
+                                    log.LogTrace("No ChannelExecuteComplete event received for {0}".Fmt(application));
                                 }
 
                                 tcs.TrySetResult(executeCompleteEvent);
@@ -325,7 +325,7 @@ namespace NEventSocket.Sockets
                 }
                 else
                 {
-                    tcs.TrySetException(t.Exception);
+                    if (t.Exception != null) tcs.TrySetException(t.Exception);
                 }
             });
 
@@ -340,18 +340,18 @@ namespace NEventSocket.Sockets
         /// </remarks>
         /// <param name="command">The command to execute.</param>
         /// <param name="arg">(Optional) command argument.</param>
-        /// <param name="jobUUID">(Optional) job unique identifier.</param>
+        /// <param name="jobUuid">(Optional) job unique identifier.</param>
         /// <returns>A Task of <seealso cref="BackgroundJobResult"/>.</returns>
-        public Task<BackgroundJobResult> BackgroundJob(string command, string arg = null, Guid? jobUUID = null)
+        public Task<BackgroundJobResult> BackgroundJob(string command, string arg = null, Guid? jobUuid = null)
         {
-            if (jobUUID == null)
+            if (jobUuid == null)
             {
-                jobUUID = Guid.NewGuid();
+                jobUuid = Guid.NewGuid();
             }
 
             var backgroundApiCommand = arg != null
-                                           ? "bgapi {0} {1}\nJob-UUID: {2}".Fmt(command, arg, jobUUID)
-                                           : "bgapi {0}\nJob-UUID: {1}".Fmt(command, jobUUID);
+                                           ? "bgapi {0} {1}\nJob-UUID: {2}".Fmt(command, arg, jobUuid)
+                                           : "bgapi {0}\nJob-UUID: {1}".Fmt(command, jobUuid);
 
             var tcs = new TaskCompletionSource<BackgroundJobResult>();
             var subscriptions = new CompositeDisposable();
@@ -363,11 +363,11 @@ namespace NEventSocket.Sockets
             }
 
             subscriptions.Add(
-                Events.Where(x => x.EventName == EventName.BackgroundJob && x.Headers[HeaderNames.JobUUID] == jobUUID.ToString())
+                Events.Where(x => x.EventName == EventName.BackgroundJob && x.Headers[HeaderNames.JobUUID] == jobUuid.ToString())
                         .Take(1)
                         .Select(x => new BackgroundJobResult(x))
-                        .Do(result => Log.LogDebug("BackgroundJobResult received [{0}] for [{1}]".Fmt(result.BodyText.Replace("\n", string.Empty), command)),
-                            ex => Log.LogError(ex, "Error waiting for BackgroundJobResult Reply to [{0}].".Fmt(command)))
+                        .Do(result => log.LogDebug("BackgroundJobResult received [{0}] for [{1}]".Fmt(result.BodyText.Replace("\n", string.Empty), command)),
+                            ex => log.LogError(ex, "Error waiting for BackgroundJobResult Reply to [{0}].".Fmt(command)))
                         .Subscribe(x => tcs.TrySetResult(x), ex => tcs.TrySetException(ex), subscriptions.Dispose));
 
             SubscribeEvents(EventName.BackgroundJob).ContinueWith(t =>
@@ -378,7 +378,7 @@ namespace NEventSocket.Sockets
                 }
                 else
                 {
-                    tcs.TrySetException(t.Exception);
+                    if (t.Exception != null) tcs.TrySetException(t.Exception);
                 }
             });
 
@@ -434,10 +434,10 @@ namespace NEventSocket.Sockets
                                     switch (e.EventName)
                                     {
                                         case EventName.ChannelBridge:
-                                            Log.LogDebug("Bridge [{0} - {1}] complete - {2}".Fmt(uuid, options.UUID, e.Headers[HeaderNames.OtherLegUniqueId]));
+                                            log.LogDebug("Bridge [{0} - {1}] complete - {2}".Fmt(uuid, options.UUID, e.Headers[HeaderNames.OtherLegUniqueId]));
                                             break;
                                         case EventName.ChannelHangup:
-                                            Log.LogDebug("Bridge [{0} - {1}]  aborted, channel hangup [{2}]".Fmt(uuid, options.UUID, e.Headers[HeaderNames.HangupCause]));
+                                            log.LogDebug("Bridge [{0} - {1}]  aborted, channel hangup [{2}]".Fmt(uuid, options.UUID, e.Headers[HeaderNames.HangupCause]));
                                             break;
                                     }
                                 }
@@ -461,7 +461,7 @@ namespace NEventSocket.Sockets
             // we're not using the CancellationToken here because we want to wait until the reply comes back
             var command = "exit";
 
-            Log.LogTrace("Sending [{0}]".Fmt(command));
+            log.LogTrace("Sending [{0}]".Fmt(command));
 
             lock (gate)
             {
@@ -474,10 +474,10 @@ namespace NEventSocket.Sockets
                             .Select(x => new CommandReply(x))
                             .Subscribe(
                                 result =>
-                                Log.LogDebug("CommandReply received [{0}] for [{1}]".Fmt(result.ReplyText.Replace("\n", string.Empty), command)),
+                                log.LogDebug("CommandReply received [{0}] for [{1}]".Fmt(result.ReplyText.Replace("\n", string.Empty), command)),
                                 ex =>
                                     {
-                                        Log.LogError(ex, "Error waiting for Command Reply to [{0}].".Fmt(command));
+                                        log.LogError(ex, "Error waiting for Command Reply to [{0}].".Fmt(command));
                                         tcs.TrySetException(ex);
                                     }));
 
@@ -490,12 +490,12 @@ namespace NEventSocket.Sockets
                             .Subscribe(
                                 x =>
                                     {
-                                        Log.LogDebug("Disconnect Notice received [{0}]".Fmt(x.BodyText));
+                                        log.LogDebug("Disconnect Notice received [{0}]".Fmt(x.BodyText));
                                         tcs.TrySetResult(x);
                                     },
                                 ex =>
                                     {
-                                        Log.LogError(ex, "Error waiting for Disconnect Notice");
+                                        log.LogError(ex, "Error waiting for Disconnect Notice");
                                         if (ex is TimeoutException)
                                         {
                                             tcs.TrySetResult(null);

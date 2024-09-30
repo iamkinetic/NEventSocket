@@ -4,6 +4,8 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace NEventSocket.FreeSwitch
 {
     using System;
@@ -53,6 +55,21 @@ namespace NEventSocket.FreeSwitch
                            ? BodyText.Substring(5, BodyText.Length - 5)
                            : string.Empty;
             }
+        }
+
+        private class DummyApiResponse : BasicMessage
+        {
+            public DummyApiResponse(string body)
+            {
+                Headers = new Dictionary<string, string> { { HeaderNames.ContentType, ContentTypes.ApiResponse } };
+                BodyText = body;
+            }
+        }
+
+        public static ApiResponse CreateDummyApiResponse(string body = "OK")
+        {
+            var apiResponse = new ApiResponse(new DummyApiResponse(body));
+            return apiResponse;
         }
     }
 }

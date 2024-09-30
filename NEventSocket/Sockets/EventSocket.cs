@@ -49,22 +49,31 @@ namespace NEventSocket.Sockets
             Log = Logger.Get<EventSocket>();
             ResponseTimeOut = responseTimeOut ?? TimeSpan.FromSeconds(5);
 
-            messages =
-                Receiver.SelectMany(x => Encoding.UTF8.GetString(x))
-                    .AggregateUntil(() => new Parser(), (builder, ch) => builder.Append(ch), builder => builder.Completed)
-                    .Select(builder => builder.ExtractMessage())
-                    .Do(
-                        x => Log.LogTrace("Messages Received [{0}].".Fmt(x.ContentType)),
-                        ex => { },
-                        () =>
-                        {
-                            Log.LogDebug("Messages Observable completed.");
-                            Dispose();
-                        })
-                    .ObserveOn(Scheduler.Immediate)
-                    .Publish()
-                    .RefCount();
-                        
+            this.messages = this.Receiver
+                .SelectMany<byte[], char>(x => (IEnumerable<char>)Encoding.UTF8.GetString(x))
+                .AggregateUntil<char, Parser>(
+                    () => new Parser(),
+                    (builder, ch) => builder.Append(ch),
+                    builder => builder.Completed)
+                .Select<Parser, BasicMessage>(builder => builder.ExtractMessage())
+                .Do<BasicMessage>(
+                    x => this.Log.LogTrace("Messages Received [{0}].".Fmt(x.ContentType)),
+                    ex =>
+                    {
+                        this.Log.LogError(ex, "Error occurred in EventSocket.");
+
+                        this.Dispose();
+
+                        throw new MessageReceiverException("Socket terminated due to error.", ex);
+                    },
+                    () =>
+                    {
+                        this.Log.LogDebug("Messages Observable completed.");
+                        this.Dispose();
+                    })
+                .ObserveOn<BasicMessage>((IScheduler)Scheduler.Immediate)
+                .Publish<BasicMessage>()
+                .RefCount<BasicMessage>();
 
             Log.LogTrace("EventSocket initialized");
         }

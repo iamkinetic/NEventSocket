@@ -151,6 +151,11 @@ namespace NEventSocket.Sockets
                 subscriptions.Add(
                     Messages.Where(x => x.ContentType == ContentTypes.ApiResponse)
                             .Take(1)
+                            .Timeout(
+                                ResponseTimeOut,
+                                Observable.Throw<BasicMessage>(
+                                    new TimeoutException(
+                                        "No api response within the specified timeout of {0}.".Fmt(ResponseTimeOut))))
                             .Select(x => new ApiResponse(x))
                             .Do(
                                 m =>

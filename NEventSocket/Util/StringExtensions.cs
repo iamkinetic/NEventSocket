@@ -221,7 +221,7 @@ namespace NEventSocket.Util
 
             foreach (var kvp in dictionary)
             {
-                sb.AppendFormat("{0}='{1}',", kvp.Key, kvp.Value);
+                sb.AppendFormat("{0}='{1}',", kvp.Key, kvp.Value.Replace(",", @"\,"));
             }
 
             return StringBuilderPool.ReturnAndFree(sb);

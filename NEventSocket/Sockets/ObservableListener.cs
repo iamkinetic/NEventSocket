@@ -173,7 +173,7 @@ namespace NEventSocket.Sockets
         {
             if (disposed != null && !disposed.EnsureCalledOnce())
             {
-                log.LogTrace("Disposing (disposing:{0})".Fmt(disposing));
+                log.LogTrace("NEventSocket Disposing (disposing:{0})".Fmt(disposing));
 
                 if (disposing)
                 {
@@ -199,7 +199,7 @@ namespace NEventSocket.Sockets
                     }
                 }
 
-                log.LogTrace("Disposed");
+                log.LogTrace("NEventSocket Disposed");
             }
         }
     }

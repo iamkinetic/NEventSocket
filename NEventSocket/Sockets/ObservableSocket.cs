@@ -128,11 +128,16 @@ namespace NEventSocket.Sockets
                         }
                         catch (OperationCanceledException ex)
                         {
-                            SafeLog(LogLevel.Error,
-                                ex.CancellationToken.IsCancellationRequested
-                                    ? "OperationCancelled Requested"
-                                    : "OperationCancelled not Requested", ex);
-                            subject.OnError(ex);
+                            if (ex.CancellationToken.IsCancellationRequested)
+                            {
+                                subject.OnCompleted();
+                            }
+                            else
+                            {
+                                SafeLog(LogLevel.Error,
+                                        "OperationCancelled not Requested by app", ex);
+                                subject.OnError(ex);
+                            }
                         }
                         catch (Exception ex)
                         {

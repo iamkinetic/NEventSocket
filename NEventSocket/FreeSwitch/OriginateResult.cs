@@ -15,6 +15,10 @@ namespace NEventSocket.FreeSwitch
     /// </summary>
     public class OriginateResult
     {
+        private OriginateResult(bool success)
+        {
+            Success = success;
+        }
         private OriginateResult(ChannelEvent channelEvent)
         {
             ChannelData = channelEvent;
@@ -76,5 +80,10 @@ namespace NEventSocket.FreeSwitch
 
             throw new ArgumentException("Message Type {0} is not valid to create an OriginateResult from.".Fmt(message.GetType()));
         }
+        public static OriginateResult CreateDummyOriginateResult(bool success)
+        {
+            return new OriginateResult(success);
+        }
+
     }
 }

@@ -7,7 +7,7 @@
     <Company>iamkinetic</Company>
     <Product>NEventSocket.DotNetCore</Product>
     <Description>.Net Core port of NEventSocket</Description>
-    <Version>2.1.0</Version>
+    <Version>2.2.1</Version>
     <RepositoryUrl>https://github.com/iamkinetic/NEventSocket</RepositoryUrl>
     <PackageTags>FreeSwitch NEventSocket DotNetCore</PackageTags>
     <PackageReleaseNotes>- Fix a few issues with the ObservableSocket.</PackageReleaseNotes>
@@ -18,8 +18,8 @@
         <dependency id="System.Reactive" version="4.3.2" />
       </group>
     </dependencies>
-    <FileVersion>2.1.0.0</FileVersion>
-    <AssemblyVersion>2.1.0.0</AssemblyVersion>
+    <FileVersion>2.2.1.0</FileVersion>
+    <AssemblyVersion>2.2.1.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

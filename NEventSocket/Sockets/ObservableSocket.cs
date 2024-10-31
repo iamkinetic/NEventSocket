@@ -126,6 +126,19 @@ namespace NEventSocket.Sockets
                             SafeLog(LogLevel.Error, "Socket Error reading from stream", ex);
                                 subject.OnError(ex);
                         }
+                        catch (OperationCanceledException ex)
+                        {
+                            if (ex.CancellationToken.IsCancellationRequested)
+                            {
+                                subject.OnCompleted();
+                            }
+                            else
+                            {
+                                SafeLog(LogLevel.Error,
+                                        "OperationCancelled not Requested by app", ex);
+                                subject.OnError(ex);
+                            }
+                        }
                         catch (Exception ex)
                         {
                             //unexpected error

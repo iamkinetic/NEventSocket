@@ -7,6 +7,11 @@
             public const string Maintainence = "conference::maintenance";
         }
 
+        public static class VoiceMail
+        {
+            public const string Maintenance = "vm::maintenance";
+        }
+
         public static class Sofia
         {
             public const string Register = "sofia::register";

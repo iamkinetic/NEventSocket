@@ -114,7 +114,7 @@ namespace NEventSocket.Sockets
 
             foreach (var b in next)
             {
-                parser = parser.Append(next);
+                parser = parser.Append(b);
             }
 
             return parser;

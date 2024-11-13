@@ -8,27 +8,28 @@ namespace NEventSocket.Sockets
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Text;
-
     using NEventSocket.FreeSwitch;
     using NEventSocket.Util;
-    using NEventSocket.Util.ObjectPooling;
 
     /// <summary>
     /// A parser for converting a stream of strings or chars into a stream of <seealso cref="BasicMessage"/>s from FreeSwitch.
     /// </summary>
     public class Parser : IDisposable
     {
-        private StringBuilder buffer = StringBuilderPool.Allocate();
-
-        private char previous;
+        private byte previous;
 
         private int? contentLength;
 
         private IDictionary<string, string> headers;
 
+        private MemoryStream headerBytes = new MemoryStream();
+        private MemoryStream bodyBytes;
+
         private readonly InterlockedBoolean disposed = new InterlockedBoolean();
 
+        private const byte headerEndDelimiter = (byte)'\n';
         ~Parser()
         {
             Dispose(false);
@@ -45,26 +46,25 @@ namespace NEventSocket.Sockets
         public bool HasBody => contentLength.HasValue && contentLength > 0;
 
         /// <summary>
-        /// Appends the given <see cref="char"/> to the message.
+        /// Appends the given <see cref="byte"/> to the message.
         /// </summary>
-        /// <param name="next">The next <see cref="char"/> of the message.</param>
+        /// <param name="next">The next <see cref="byte"/> of the message.</param>
         /// <returns>The same instance of the <see cref="Parser"/>.</returns>
-        public Parser Append(char next)
+        public Parser Append(byte next)
         {
             if (Completed)
             {
                 return new Parser().Append(next);
             }
 
-            buffer.Append(next);
-
             if (!HasBody)
             {
+                headerBytes.WriteByte(next);
                 // we're parsing the headers
-                if (previous == '\n' && next == '\n')
+                if (previous == headerEndDelimiter && next == headerEndDelimiter)
                 {
                     // \n\n denotes the end of the Headers
-                    var headerString = buffer.ToString();
+                    var headerString = Encoding.UTF8.GetString(headerBytes.ToArray());
 
                     headers = headerString.ParseKeyValuePairs(": ");
 
@@ -79,10 +79,7 @@ namespace NEventSocket.Sockets
                         else
                         {
                             // start parsing the body content
-                            buffer.Clear();
-
-                            // allocate the buffer up front given that we now know the expected size
-                            buffer.EnsureCapacity(contentLength.Value);
+                            bodyBytes = new MemoryStream(contentLength.Value);
                         }
                     }
                     else
@@ -98,8 +95,11 @@ namespace NEventSocket.Sockets
             }
             else
             {
+                Debug.Assert(bodyBytes != null);
+                bodyBytes.WriteByte(next);
                 // if we've read the Content-Length amount of bytes then we're done
-                Completed = buffer.Length == contentLength.GetValueOrDefault() || contentLength == 0;
+                Debug.Assert(contentLength > 0);
+                Completed = bodyBytes.Length == contentLength.GetValueOrDefault();
             }
 
             return this;
@@ -108,13 +108,13 @@ namespace NEventSocket.Sockets
         /// <summary>
         /// Appends the provided string to the internal buffer.
         /// </summary>
-        public Parser Append(string next)
+        public Parser Append(byte[] next)
         {
             var parser = this;
 
-            foreach (var c in next)
+            foreach (var b in next)
             {
-                parser = parser.Append(next);
+                parser = parser.Append(b);
             }
 
             return parser;
@@ -141,17 +141,17 @@ namespace NEventSocket.Sockets
 
                 if (HasBody)
                 {
-                    errorMessage += "expected a body with length {0}, got {1} instead.".Fmt(contentLength, buffer.Length);
+                    errorMessage += "expected a body with length {0}, got {1} instead.".Fmt(contentLength, bodyBytes.Length);
                 }
 
                 throw new InvalidOperationException(errorMessage);
             }
 
-            var result = HasBody ? new BasicMessage(headers, buffer.ToString()) : new BasicMessage(headers);
+            var result = HasBody ? new BasicMessage(headers, bodyBytes.ToArray()) : new BasicMessage(headers);
 
             if (HasBody)
             {
-                Debug.Assert(result.BodyText.Length == result.ContentLength);
+                Debug.Assert(bodyBytes.Length == result.ContentLength);
             }
 
             Dispose();
@@ -168,11 +168,7 @@ namespace NEventSocket.Sockets
         {
             if (disposed != null && !disposed.EnsureCalledOnce())
             {
-                if (buffer != null)
-                {
-                    StringBuilderPool.Free(buffer);
-                    buffer = null;
-                }
+                bodyBytes = null;
             }
         }
     }

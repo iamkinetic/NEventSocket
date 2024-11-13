@@ -278,6 +278,155 @@ Content-Length: 67
 Disconnected, goodbye.
 See you at ClueCon! http://www.cluecon.com/";
 
+        public const string DetectedSpeech = @"Content-Length: 2471
+Content-Type: text/event-plain
+
+Event-Name: DETECTED_SPEECH
+Core-UUID: ec530c4e-484d-473e-9bd0-073863f752eb
+FreeSWITCH-Hostname: ser
+FreeSWITCH-Switchname: ser
+FreeSWITCH-IPv4: 192.168.1.104
+FreeSWITCH-IPv6: %3A%3A1
+Event-Date-Local: 2021-06-28%2023%3A20%3A38
+Event-Date-GMT: Mon,%2028%20Jun%202021%2021%3A20%3A38%20GMT
+Event-Date-Timestamp: 1624915238513391
+Event-Calling-File: switch_ivr_async.c
+Event-Calling-Function: speech_thread
+Event-Calling-Line-Number: 4947
+Event-Sequence: 251969
+Speech-Type: detected-speech
+ASR-Completion-Cause: 0
+Channel-State: CS_EXECUTE
+Channel-Call-State: ACTIVE
+Channel-State-Number: 4
+Channel-Name: sofia/internal/%2B491734064561%40172.16.50.128
+Unique-ID: f5228692-9715-4b6f-b54b-9e35be1a7335
+Call-Direction: inbound
+Presence-Call-Direction: inbound
+Channel-HIT-Dialplan: true
+Channel-Presence-ID: %2B491734064561%40172.16.50.128
+Channel-Call-UUID: f5228692-9715-4b6f-b54b-9e35be1a7335
+Answer-State: answered
+Channel-Read-Codec-Name: G722
+Channel-Read-Codec-Rate: 16000
+Channel-Read-Codec-Bit-Rate: 64000
+Channel-Write-Codec-Name: G722
+Channel-Write-Codec-Rate: 16000
+Channel-Write-Codec-Bit-Rate: 64000
+Caller-Direction: inbound
+Caller-Logical-Direction: inbound
+Caller-Username: %2B491734000000
+Caller-Dialplan: XML
+Caller-Caller-ID-Name: %2B491734000000
+Caller-Caller-ID-Number: %2B491734000000
+Caller-Orig-Caller-ID-Name: %2B491734000000
+Caller-Orig-Caller-ID-Number: %2B491734000000
+Caller-Network-Addr: 10.1.10.100
+Caller-ANI: %2B491734000000
+Caller-Destination-Number: 493000000000000
+Caller-Unique-ID: f5228692-9715-4b6f-b54b-9e35be1a7335
+Caller-Source: mod_sofia
+Caller-Context: public
+Caller-Channel-Name: sofia/internal/%2B491734064561%40172.16.50.128
+Caller-Profile-Index: 1
+Caller-Profile-Created-Time: 1624915212053386
+Caller-Channel-Created-Time: 1624915212053386
+Caller-Channel-Answered-Time: 1624915222293356
+Caller-Channel-Progress-Time: 0
+Caller-Channel-Progress-Media-Time: 1624915216013390
+Caller-Channel-Hangup-Time: 0
+Caller-Channel-Transfer-Time: 0
+Caller-Channel-Resurrect-Time: 0
+Caller-Channel-Bridged-Time: 0
+Caller-Channel-Last-Hold: 0
+Caller-Channel-Hold-Accum: 0
+Caller-Screen-Bit: true
+Caller-Privacy-Hide-Name: false
+Caller-Privacy-Hide-Number: false
+Content-Length: 261
+
+<?xml version=""1.0""?>
+<result>
+  <interpretation grammar=""builtin:speech/transcribe"" confidence=""91"">
+    <instance>Verlängerung Störung Bestätigung</instance>
+    <input mode=""speech"">Verlängerung Störung Bestätigung</input>
+  </interpretation>
+</result>";
+
+        public const string DetectedSpeechEnglish = @"Content-Length: 2465
+Content-Type: text/event-plain
+
+Event-Name: DETECTED_SPEECH
+Core-UUID: ec530c4e-484d-473e-9bd0-073863f752eb
+FreeSWITCH-Hostname: ser
+FreeSWITCH-Switchname: ser
+FreeSWITCH-IPv4: 192.168.1.104
+FreeSWITCH-IPv6: %3A%3A1
+Event-Date-Local: 2021-06-28%2023%3A20%3A38
+Event-Date-GMT: Mon,%2028%20Jun%202021%2021%3A20%3A38%20GMT
+Event-Date-Timestamp: 1624915238513391
+Event-Calling-File: switch_ivr_async.c
+Event-Calling-Function: speech_thread
+Event-Calling-Line-Number: 4947
+Event-Sequence: 251969
+Speech-Type: detected-speech
+ASR-Completion-Cause: 0
+Channel-State: CS_EXECUTE
+Channel-Call-State: ACTIVE
+Channel-State-Number: 4
+Channel-Name: sofia/internal/%2B491734064561%40172.16.50.128
+Unique-ID: f5228692-9715-4b6f-b54b-9e35be1a7335
+Call-Direction: inbound
+Presence-Call-Direction: inbound
+Channel-HIT-Dialplan: true
+Channel-Presence-ID: %2B491734064561%40172.16.50.128
+Channel-Call-UUID: f5228692-9715-4b6f-b54b-9e35be1a7335
+Answer-State: answered
+Channel-Read-Codec-Name: G722
+Channel-Read-Codec-Rate: 16000
+Channel-Read-Codec-Bit-Rate: 64000
+Channel-Write-Codec-Name: G722
+Channel-Write-Codec-Rate: 16000
+Channel-Write-Codec-Bit-Rate: 64000
+Caller-Direction: inbound
+Caller-Logical-Direction: inbound
+Caller-Username: %2B491734000000
+Caller-Dialplan: XML
+Caller-Caller-ID-Name: %2B491734000000
+Caller-Caller-ID-Number: %2B491734000000
+Caller-Orig-Caller-ID-Name: %2B491734000000
+Caller-Orig-Caller-ID-Number: %2B491734000000
+Caller-Network-Addr: 10.1.10.100
+Caller-ANI: %2B491734000000
+Caller-Destination-Number: 493000000000000
+Caller-Unique-ID: f5228692-9715-4b6f-b54b-9e35be1a7335
+Caller-Source: mod_sofia
+Caller-Context: public
+Caller-Channel-Name: sofia/internal/%2B491734064561%40172.16.50.128
+Caller-Profile-Index: 1
+Caller-Profile-Created-Time: 1624915212053386
+Caller-Channel-Created-Time: 1624915212053386
+Caller-Channel-Answered-Time: 1624915222293356
+Caller-Channel-Progress-Time: 0
+Caller-Channel-Progress-Media-Time: 1624915216013390
+Caller-Channel-Hangup-Time: 0
+Caller-Channel-Transfer-Time: 0
+Caller-Channel-Resurrect-Time: 0
+Caller-Channel-Bridged-Time: 0
+Caller-Channel-Last-Hold: 0
+Caller-Channel-Hold-Accum: 0
+Caller-Screen-Bit: true
+Caller-Privacy-Hide-Name: false
+Caller-Privacy-Hide-Number: false
+Content-Length: 255
+
+<?xml version=""1.0""?>
+<result>
+  <interpretation grammar=""builtin:speech/transcribe"" confidence=""91"">
+    <instance>Extensions Problems Confirmation</instance>
+    <input mode=""speech"">Extensions Problems Confirmation</input>
+  </interpretation>
+</result>";
 
         public const string PlaybackComplete = @"Content-Length: 7209
 Content-Type: text/event-plain

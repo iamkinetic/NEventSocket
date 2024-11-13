@@ -176,6 +176,27 @@ namespace NEventSocket.Tests.Sockets
         }
 
         [Fact]
+        public void it_should_parse_empty_string_when_empty_Command_Reply_ERR()
+        {
+            var parser = new Parser();
+            var rawInput = "Content-Type: command/reply\nReply-Text: -ERR\n\n";
+
+            foreach (char c in rawInput)
+            {
+                parser.Append(c);
+            }
+
+            Assert.True(parser.Completed);
+
+            var reply = new CommandReply(parser.ExtractMessage());
+            Assert.NotNull(reply);
+            Assert.False(reply.Success);
+            Assert.Equal(string.Empty, reply.ErrorMessage);
+
+            Console.WriteLine(reply);
+        }
+
+        [Fact]
         public void it_should_parse_Api_Response_OK()
         {
             var parser = new Parser();
@@ -212,6 +233,26 @@ namespace NEventSocket.Tests.Sockets
             Assert.NotNull(response);
             Assert.False(response.Success);
             Assert.Equal("Error", response.ErrorMessage);
+
+            Console.WriteLine(response);
+        }
+
+        [Fact]
+        public void it_should_parse_empty_string_when_empty_Api_Response_ERR()
+        {
+            var parser = new Parser();
+            var rawInput = "Content-Type: api/response\nContent-Length: 4\n\n-ERR";
+
+            foreach (char c in rawInput)
+            {
+                parser.Append(c);
+            }
+
+            Assert.True(parser.Completed);
+
+            var response = new ApiResponse(parser.ExtractMessage());
+            Assert.False(response.Success);
+            Assert.Equal(string.Empty, response.ErrorMessage);
 
             Console.WriteLine(response);
         }

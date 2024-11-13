@@ -51,7 +51,7 @@ namespace NEventSocket.FreeSwitch
         {
             get
             {
-                return BodyText != null && BodyText.StartsWith("-ERR")
+                return BodyText != null && BodyText.StartsWith("-ERR ")
                            ? BodyText.Substring(5, BodyText.Length - 5)
                            : string.Empty;
             }

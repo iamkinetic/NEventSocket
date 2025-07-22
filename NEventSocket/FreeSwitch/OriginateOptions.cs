@@ -287,7 +287,7 @@ namespace NEventSocket.FreeSwitch
                 return;
             }
 
-            sb.Append("<");
+            sb.Append("{");
 
             sb.Append(EnterpriseChannelVariables.ToOriginateString());
 
@@ -296,7 +296,7 @@ namespace NEventSocket.FreeSwitch
                 sb.Remove(sb.Length - 1, 1);
             }
 
-            sb.Append(">");
+            sb.Append("}");
         }
 
         /// <summary>

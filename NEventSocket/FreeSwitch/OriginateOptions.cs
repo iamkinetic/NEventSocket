@@ -271,32 +271,9 @@ namespace NEventSocket.FreeSwitch
         public override string ToString()
         {
             var sb = StringBuilderPool.Allocate();
-            AppendOriginateEnterpriseChannelVariablesString(sb);
             AppendOriginateChannelVariablesString(sb);
 
             return StringBuilderPool.ReturnAndFree(sb);
-        }
-
-        /// <summary>
-        /// Append enterprise channel variables to string builder
-        /// </summary>
-        private void AppendOriginateEnterpriseChannelVariablesString(StringBuilder sb)
-        {
-            if (!EnterpriseChannelVariables.Any())
-            {
-                return;
-            }
-
-            sb.Append("{");
-
-            sb.Append(EnterpriseChannelVariables.ToOriginateString());
-
-            if (sb.Length > 1)
-            {
-                sb.Remove(sb.Length - 1, 1);
-            }
-
-            sb.Append("}");
         }
 
         /// <summary>
@@ -304,7 +281,7 @@ namespace NEventSocket.FreeSwitch
         /// </summary>
         private void AppendOriginateChannelVariablesString(StringBuilder sb)
         {
-            if (!ChannelVariables.Any() && !parameters.Any())
+            if (!parameters.Any() && !EnterpriseChannelVariables.Any() && !ChannelVariables.Any())
             {
                 return;
             }
@@ -312,6 +289,7 @@ namespace NEventSocket.FreeSwitch
             sb.Append("{");
 
             sb.Append(parameters.ToOriginateString());
+            sb.Append(EnterpriseChannelVariables.ToOriginateString()); //ici, je crois que pour une entreprise variable il faurait ajouter le caractere $ dans la valeur pour dire que c'est un entreprise variable
             sb.Append(ChannelVariables.ToOriginateString());
 
             if (sb.Length > 1)

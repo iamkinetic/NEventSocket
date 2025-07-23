@@ -1,5 +1,4 @@
-﻿
-namespace NEventSocket.Tests.Sockets
+﻿namespace NEventSocket.Tests.Sockets
 {
     using System;
     using System.Reactive.Linq;
@@ -7,17 +6,19 @@ namespace NEventSocket.Tests.Sockets
 
     using Microsoft.Extensions.Logging;
 
+    using NUnit.Framework;
+
     using NEventSocket;
     using NEventSocket.FreeSwitch;
     using NEventSocket.Logging;
     using NEventSocket.Tests.Fakes;
     using NEventSocket.Tests.TestSupport;
 
-    using Xunit;
-
+    [TestFixture]
     public class OutboundSocketTests
     {
-        public OutboundSocketTests()
+        [SetUp]
+        public void SetUp()
         {
             PreventThreadPoolStarvation.Init();
             Logger.Configure(LoggerFactory.Create(builder =>
@@ -31,7 +32,7 @@ namespace NEventSocket.Tests.Sockets
 
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs, Skip = "Removing timeouts")]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs), Ignore("Removing timeouts")]
         public async Task Disposing_the_listener_completes_the_message_observables()
         {
             using (var listener = new OutboundListener(0))
@@ -51,7 +52,7 @@ namespace NEventSocket.Tests.Sockets
                     await connection.Connect();
 
                     channelDataReceived = connection.ChannelData != null;
-                    Assert.True(channelDataReceived);
+                    Assert.That(channelDataReceived, Is.True);
                 });
 
                 using (var freeSwitch = new FakeFreeSwitchSocket(listener.Port))
@@ -65,14 +66,14 @@ namespace NEventSocket.Tests.Sockets
                     await Wait.Until(() => messagesObservableCompleted);
                     await Wait.Until(() => eventsObservableCompleted);
 
-                    Assert.True(connected, "Expect a connection to have been made.");
-                    Assert.True(messagesObservableCompleted, "Expect the BasicMessage observable to be completed");
-                    Assert.True(eventsObservableCompleted, "Expect the EventMessage observable to be completed");
+                    Assert.That(connected, Is.True, "Expect a connection to have been made.");
+                    Assert.That(messagesObservableCompleted, Is.True, "Expect the BasicMessage observable to be completed");
+                    Assert.That(eventsObservableCompleted, Is.True, "Expect the EventMessage observable to be completed");
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task When_FreeSwitch_disconnects_it_completes_the_message_observables()
         {
             using (var listener = new OutboundListener(0))
@@ -100,15 +101,15 @@ namespace NEventSocket.Tests.Sockets
                     await Wait.Until(() => messagesObservableCompleted);
                     await Wait.Until(() => eventsObservableCompleted);
 
-                    Assert.True(connected, "Expect a connection to have been made.");
-                    Assert.True(disposed, "Expect the socket to have been disposed.");
-                    Assert.True(messagesObservableCompleted, "Expect the BasicMessage observable to be completed");
-                    Assert.True(eventsObservableCompleted, "Expect the EventMessage observable to be completed");
+                    Assert.That(connected, Is.True, "Expect a connection to have been made.");
+                    Assert.That(disposed, Is.True, "Expect the socket to have been disposed.");
+                    Assert.That(messagesObservableCompleted, Is.True, "Expect the BasicMessage observable to be completed");
+                    Assert.That(eventsObservableCompleted, Is.True, "Expect the EventMessage observable to be completed");
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task Calling_Connect_on_a_new_OutboundSocket_should_populate_the_ChannelData()
         {
             using (var listener = new OutboundListener(0))
@@ -129,14 +130,14 @@ namespace NEventSocket.Tests.Sockets
 
                     await Wait.Until(() => channelData != null);
 
-                    Assert.NotNull(channelData);
-                    Assert.Equal(ChannelState.Execute, channelData.ChannelState);
-                    Assert.Equal("RINGING", channelData.Headers["Channel-Call-State"]);
+                    Assert.That(channelData, Is.Not.Null);
+                    Assert.That(channelData.ChannelState, Is.EqualTo(ChannelState.Execute));
+                    Assert.That(channelData.Headers["Channel-Call-State"], Is.EqualTo("RINGING"));
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task Calling_Exit_on_a_disconnected_OutboundSocket_should_close_gracefully()
         {
             using (var listener = new OutboundListener(0))
@@ -166,12 +167,12 @@ namespace NEventSocket.Tests.Sockets
                     await Wait.Until(() => channelData != null);
                     await Wait.Until(() => exited);
 
-                    Assert.True(exited);
+                    Assert.That(exited, Is.True);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs, Skip = "Low priority right now")]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs), Ignore("Low priority right now")]
         public async Task Calling_Connect_on_a_OutboundSocket_that_was_disconnected_should_throw_OperationCanceledException()
         {
             using (var listener = new OutboundListener(0))
@@ -179,19 +180,19 @@ namespace NEventSocket.Tests.Sockets
                 listener.Start();
                 Exception ex = null;
 
-                listener.Connections.Subscribe((socket) => ex = Record.Exception(() => socket.Connect().Wait()));
+                listener.Connections.Subscribe((socket) => ex = Assert.Throws<AggregateException>(() => socket.Connect().Wait()));
 
                 using (var freeSwitch = new FakeFreeSwitchSocket(listener.Port))
                 {
                     freeSwitch.MessagesReceived.FirstAsync(m => m.StartsWith("connect")).Subscribe(_ => freeSwitch.Dispose());
 
                     await Wait.Until(() => ex != null);
-                    Assert.IsType<TaskCanceledException>(ex.InnerException);
+                    Assert.That(ex.InnerException, Is.TypeOf<TaskCanceledException>());
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task Channel_listener_should_handle_where_FS_disconnects_before_channelData_event_received()
         {
             using (var listener = new OutboundListener(0))
@@ -211,12 +212,12 @@ namespace NEventSocket.Tests.Sockets
                         });
 
                     await Wait.Until(() => firstConnectionReceived);
-                    Assert.False(channelCallbackCalled);
+                    Assert.That(channelCallbackCalled, Is.False);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs, Skip = "not working in some test runners")]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs), Ignore("not working in some test runners")]
         public async Task Channel_connect_errors_should_not_cause_subsequent_connections_to_fail()
         {
             using (var listener = new OutboundListener(0))
@@ -237,7 +238,7 @@ namespace NEventSocket.Tests.Sockets
                         });
 
                     await Wait.Until(() => firstConnectionReceived);
-                    Assert.False(channelCallbackCalled);
+                    Assert.That(channelCallbackCalled, Is.False);
                 }
 
                 using (var freeSwitch = new FakeFreeSwitchSocket(listener.Port))
@@ -256,12 +257,12 @@ namespace NEventSocket.Tests.Sockets
 
 
                     await Wait.Until(() => secondConnectionReceived);
-                    Assert.True(channelCallbackCalled);
+                    Assert.That(channelCallbackCalled, Is.True);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task can_send_api()
         {
             using (var listener = new OutboundListener(0))
@@ -294,14 +295,14 @@ namespace NEventSocket.Tests.Sockets
                     await Wait.Until(() => apiRequestReceived);
                     await Wait.Until(() => apiResponse != null);
 
-                    Assert.True(apiRequestReceived);
-                    Assert.NotNull(apiResponse);
-                    Assert.True(apiResponse.Success);
+                    Assert.That(apiRequestReceived, Is.True);
+                    Assert.That(apiResponse, Is.Not.Null);
+                    Assert.That(apiResponse.Success, Is.True);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task can_send_command()
         {
             using (var listener = new OutboundListener(0))
@@ -333,14 +334,14 @@ namespace NEventSocket.Tests.Sockets
 
                     await Wait.Until(() => commandRequestReceived);
 
-                    Assert.True(commandRequestReceived);
-                    Assert.NotNull(commandReply);
-                    Assert.True(commandReply.Success);
+                    Assert.That(commandRequestReceived, Is.True);
+                    Assert.That(commandReply, Is.Not.Null);
+                    Assert.That(commandReply.Success, Is.True);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task can_send_multple_commands()
         {
             using (var listener = new OutboundListener(0))
@@ -380,9 +381,9 @@ namespace NEventSocket.Tests.Sockets
 
                     await Wait.Until(() => commandRequestReceived);
 
-                    Assert.True(commandRequestReceived);
-                    Assert.NotNull(commandReply);
-                    Assert.False(commandReply.Success);
+                    Assert.That(commandRequestReceived, Is.True);
+                    Assert.That(commandReply, Is.Not.Null);
+                    Assert.That(commandReply.Success, Is.False);
                 }
             }
         }

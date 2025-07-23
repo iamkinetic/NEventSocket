@@ -1,8 +1,9 @@
 ﻿using System;
-using Xunit;
+using NUnit.Framework;
 
 namespace NEventSocket.Tests.TestSupport
 {   
+    [TestFixture]
     public class TestEnvironmentSupport
     {
         static TestEnvironmentSupport()
@@ -14,7 +15,7 @@ namespace NEventSocket.Tests.TestSupport
             }
         }
 
-        [Fact]
+        [Test]
         public void EmptyTest()
         {
         }

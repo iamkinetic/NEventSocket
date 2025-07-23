@@ -4,11 +4,12 @@
 
     using NEventSocket.FreeSwitch;
 
-    using Xunit;
+    using NUnit.Framework;
 
+    [TestFixture]
     public class BridgeTests
     {
-        [Fact]
+        [Test]
         public void can_format_BridgeOptions()
         {
             var options = new BridgeOptions()
@@ -29,10 +30,10 @@
 
             var toString = options.ToString();
             const string Expected = "{origination_uuid='985cea12-4e70-4c03-8a2c-2c4b4502bbbb',leg_timeout='20',origination_caller_id_name='Dan B Leg',origination_caller_id_number='987654321',ignore_early_media='true'}";
-            Assert.Equal(Expected, toString);
+            Assert.That(toString, Is.EqualTo(Expected));
         }
 
-        [Fact]
+        [Test]
         public void can_serialize_and_deserialize_BridgeOptions()
         {
             var options = new BridgeOptions()
@@ -54,7 +55,7 @@
             
             var fromJson = JsonSerializer.Deserialize<BridgeOptions>(json);
             
-            Assert.Equal(options, fromJson);
+            Assert.That(fromJson, Is.EqualTo(options));
         }
     }
 }

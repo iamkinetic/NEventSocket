@@ -33,14 +33,5 @@ namespace NEventSocket
         public InboundSocketConnectionFailedException(string message, Exception innerException) : base(message, innerException)
         {
         }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="InboundSocketConnectionFailedException"/> class.
-        /// </summary>
-        /// <param name="info">The information.</param>
-        /// <param name="context">The context.</param>
-        protected InboundSocketConnectionFailedException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
     }
 }

@@ -2,21 +2,23 @@
 {
     using System;
     using System.Reactive.Linq;
-        using System.Text.RegularExpressions;
+    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
 
     using Microsoft.Extensions.Logging;
+
+    using NUnit.Framework;
 
     using NEventSocket;
     using NEventSocket.Logging;
     using NEventSocket.Tests.Fakes;
     using NEventSocket.Tests.TestSupport;
 
-    using Xunit;
-
+    [TestFixture]
     public class InboundSocketTests
     {
-        public InboundSocketTests()
+        [SetUp]
+        public void SetUp()
         {
             PreventThreadPoolStarvation.Init();
             Logger.Configure(LoggerFactory.Create(builder =>
@@ -29,7 +31,7 @@
             }));
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task sending_a_correct_password_should_connect()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -63,17 +65,17 @@
 
                 using (var client = await InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon"))
                 {
-                    Assert.True(authRequestReceived);
+                    Assert.That(authRequestReceived, Is.True);
 
                     await client.Exit();
 
                     await Wait.Until(() => exitRequestReceived);
-                    Assert.True(exitRequestReceived);
+                    Assert.That(exitRequestReceived, Is.True);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public void an_invalid_password_should_throw_an_InboundSocketConnectionFailedException()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -95,27 +97,27 @@
                         await socket.Send("Content-Type: auth/request");
                     });
 
-                var aggregateException = Record.Exception(() => InboundSocket.Connect("127.0.0.1", listener.Port, "WrongPassword").Wait());
-                Assert.True(authRequestReceived);
-                Assert.IsType<InboundSocketConnectionFailedException>(aggregateException.InnerException);
-                Assert.Equal("Invalid password when trying to connect to 127.0.0.1:" + listener.Port, aggregateException.InnerException.Message);
+                var aggregateException = Assert.Throws<AggregateException>(() => InboundSocket.Connect("127.0.0.1", listener.Port, "WrongPassword").Wait());
+                Assert.That(authRequestReceived, Is.True);
+                Assert.That(aggregateException.InnerException, Is.TypeOf<InboundSocketConnectionFailedException>());
+                Assert.That(aggregateException.InnerException.Message, Is.EqualTo("Invalid password when trying to connect to 127.0.0.1:" + listener.Port));
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public void when_no_AuthRequest_received_it_should_throw_TimeoutException_wrapped_in_InboundSocketConnectionFailedException()
         {
             using (var listener = new FakeFreeSwitchListener(0))
             {
                 listener.Start();
 
-                var aggregateException = Record.Exception(() => InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon", TimeSpan.FromMilliseconds(100)).Wait());
-                Assert.IsType<InboundSocketConnectionFailedException>(aggregateException.InnerException);
-                Assert.IsType<TimeoutException>(aggregateException.InnerException.InnerException);
+                var aggregateException = Assert.Throws<AggregateException>(() => InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon", TimeSpan.FromMilliseconds(100)).Wait());
+                Assert.That(aggregateException.InnerException, Is.TypeOf<InboundSocketConnectionFailedException>());
+                Assert.That(aggregateException.InnerException.InnerException, Is.TypeOf<TimeoutException>());
             }
         }
 
-        [Fact(Timeout = 5000, Skip = "Removing timeouts")]
+        [Test, CancelAfter(5000), Ignore("Removing timeouts")]
         public void when_no_response_to_auth_received_it_should_throw_TimeoutException_wrapped_in_InboundSocketConnectionFailedException()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -128,13 +130,13 @@
                         await socket.Send("Content-Type: auth/request");
                     });
 
-                var aggregateException = Record.Exception(() => InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon", TimeSpan.FromMilliseconds(100)).Wait());
-                Assert.IsType<InboundSocketConnectionFailedException>(aggregateException.InnerException);
-                Assert.IsType<TimeoutException>(aggregateException.InnerException.InnerException);
+                var aggregateException = Assert.Throws<AggregateException>(() => InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon", TimeSpan.FromMilliseconds(100)).Wait());
+                Assert.That(aggregateException.InnerException, Is.TypeOf<InboundSocketConnectionFailedException>());
+                Assert.That(aggregateException.InnerException.InnerException, Is.TypeOf<TimeoutException>());
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task can_send_api()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -165,12 +167,12 @@
                 using (var client = await InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon"))
                 {
                     var result = await client.SendApi("status");
-                    Assert.True(result.Success);
+                    Assert.That(result.Success, Is.True);
                 }
             }
         }
 
-        [Fact(Timeout = 5000, Skip = "Removing timeouts")]
+        [Test, CancelAfter(5000), Ignore("Removing timeouts")]
         public async Task when_no_api_response_received_it_should_throw_a_TimeOutException()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -207,21 +209,21 @@
                         await socket.Send("Content-Type: auth/request");
                     });
 
-                using (var client = InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon", TimeSpan.FromMilliseconds(100)).Result)
+                using (var client = await InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon", TimeSpan.FromMilliseconds(100)))
                 {
                     client.ResponseTimeOut = TimeSpan.FromMilliseconds(100);
-                    var ex = Record.Exception(() => client.SendApi("status").Wait());
+                    var ex = Assert.Throws<AggregateException>(() => client.SendApi("status").Wait());
 
-                    Assert.NotNull(ex);
-                    Assert.IsType<TimeoutException>(ex.InnerException);
-                    Assert.True(apiRequestReceived);
+                    Assert.That(ex, Is.Not.Null);
+                    Assert.That(ex.InnerException, Is.TypeOf<TimeoutException>());
+                    Assert.That(apiRequestReceived, Is.True);
 
                     await client.Exit();
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task can_send_command()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -252,12 +254,12 @@
                 using (var client = await InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon"))
                 {
                     var result = await client.SendCommand("test");
-                    Assert.True(result.Success);
+                    Assert.That(result.Success, Is.True);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task can_send_multiple_commands()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -295,16 +297,16 @@
                 using (var client = await InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon"))
                 {
                     var result = await client.SendCommand("test");
-                    Assert.True(result.Success);
+                    Assert.That(result.Success, Is.True);
 
                     result = await client.SendCommand("event CHANNEL_ANSWER");
-                    Assert.False(result.Success);
+                    Assert.That(result.Success, Is.False);
                 }
             }
         }
 
-        [Fact(Timeout = 5000, Skip = "Removing timeouts")]
-        public void when_no_command_reply_received_it_should_throw_a_TimeOutException()
+        [Test, CancelAfter(5000), Ignore("Removing timeouts")]
+            public async Task when_no_command_reply_received_it_should_throw_a_TimeOutException()
         {
             using (var listener = new FakeFreeSwitchListener(0))
             {
@@ -332,17 +334,17 @@
                         await socket.Send("Content-Type: auth/request");
                     });
 
-                using (var client = InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon", TimeSpan.FromMilliseconds(100)).Result)
+                using (var client = await InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon", TimeSpan.FromMilliseconds(100)))
                 {
-                    var ex = Record.Exception(() => client.SendCommand("test").Wait());
-                    Assert.NotNull(ex);
-                    Assert.IsType<TimeoutException>(ex.InnerException);
-                    Assert.True(commandRequestReceived);
+                    var ex = Assert.Throws<AggregateException>(() => client.SendCommand("test").Wait());
+                    Assert.That(ex, Is.Not.Null);
+                    Assert.That(ex.InnerException, Is.TypeOf<TimeoutException>());
+                    Assert.That(commandRequestReceived, Is.True);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs, Skip = "Removing timeouts")]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs), Ignore("Removing timeouts")]
         public async Task when_the_inbound_socket_is_disposed_it_should_complete_the_observables()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -382,12 +384,12 @@
                     client.Dispose();
 
                     await Wait.Until(() => completed);
-                    Assert.True(completed);
+                    Assert.That(completed, Is.True);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task when_FreeSwitch_disconnects_it_should_complete_the_observables()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -433,12 +435,12 @@
 
                     await Wait.Until(() => completed);
 
-                    Assert.True(completed);
+                    Assert.That(completed, Is.True);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task when_a_command_reply_error_is_received_in_response_to_an_application_request_it_should_return_a_failed_ApplicationResult()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -473,12 +475,12 @@
                 using (var client = await InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon"))
                 {
                     var result = await client.Play("c1cdaeae-ebb0-4f3f-8f75-0f673bfbc046", "test.wav");
-                    Assert.False(result.Success);
+                    Assert.That(result.Success, Is.False);
                 }
             }
         }
 
-        [Fact(Timeout = TimeOut.TestTimeOutMs)]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task when_a_CHANNEL_EXECUTE_COMPLETE_event_is_returned_it_should_complete_the_Application()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -526,8 +528,8 @@
                 using (var client = await InboundSocket.Connect("127.0.0.1", listener.Port, "ClueCon"))
                 {
                     var result = await client.Play("4e1cfa50-4c2f-44c9-aaf3-8ca590bed0e4", "test.wav");
-                    Assert.True(result.Success);
-                    Assert.Equal("FILE PLAYED", result.ResponseText);
+                    Assert.That(result.Success, Is.True);
+                    Assert.That(result.ResponseText, Is.EqualTo("FILE PLAYED"));
                 }
             }
         }

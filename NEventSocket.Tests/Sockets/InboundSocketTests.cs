@@ -117,7 +117,7 @@
             }
         }
 
-        [Test, CancelAfter(5000), Ignore("Removing timeouts")]
+        [Test, CancelAfter(5000)]
         public void when_no_response_to_auth_received_it_should_throw_TimeoutException_wrapped_in_InboundSocketConnectionFailedException()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -172,7 +172,7 @@
             }
         }
 
-        [Test, CancelAfter(5000), Ignore("Removing timeouts")]
+        [Test, CancelAfter(5000)]
         public async Task when_no_api_response_received_it_should_throw_a_TimeOutException()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -305,7 +305,7 @@
             }
         }
 
-        [Test, CancelAfter(5000), Ignore("Removing timeouts")]
+        [Test, CancelAfter(5000)]
             public async Task when_no_command_reply_received_it_should_throw_a_TimeOutException()
         {
             using (var listener = new FakeFreeSwitchListener(0))
@@ -344,7 +344,7 @@
             }
         }
 
-        [Test, CancelAfter(TimeOut.TestTimeOutMs), Ignore("Removing timeouts")]
+        [Test, CancelAfter(TimeOut.TestTimeOutMs)]
         public async Task when_the_inbound_socket_is_disposed_it_should_complete_the_observables()
         {
             using (var listener = new FakeFreeSwitchListener(0))

@@ -221,9 +221,11 @@ namespace NEventSocket.Util
 
             foreach (var kvp in dictionary)
             {
-                sb.AppendFormat("{0}='{1}',", kvp.Key, kvp.Value.Replace(",", @"\,"));
+                if (kvp.Value != null)
+                {
+                    sb.AppendFormat("{0}='{1}',", kvp.Key, kvp.Value.Replace(",", @"\,"));
+                }
             }
-
             return StringBuilderPool.ReturnAndFree(sb);
         }
     }

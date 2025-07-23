@@ -6,13 +6,15 @@ using NEventSocket.Sockets;
 using NEventSocket.Tests.Properties;
 using NEventSocket.Tests.TestSupport;
 using NEventSocket.Util;
-using Xunit;
+using NUnit.Framework;
 
 namespace NEventSocket.Tests.Sockets
 {
+    [TestFixture]
     public class MessageParsingTests
     {
-        [Theory, MemberData(nameof(ExampleMessages))]
+        [Test]
+        [TestCaseSource(nameof(ExampleMessages))]
         public void it_should_parse_the_expected_messages_from_a_stream(int expectedMessageCount, string exampleInput)
         {
             int parsedMessageCount = 0;
@@ -22,15 +24,15 @@ namespace NEventSocket.Tests.Sockets
                         .Select(parser => parser.ExtractMessage())
                         .Subscribe(_ => parsedMessageCount++);
 
-            Assert.Equal(expectedMessageCount, parsedMessageCount);
+            Assert.That(parsedMessageCount, Is.EqualTo(expectedMessageCount));
         }
 
-        [Theory]
-        [InlineData(TestMessages.BackgroundJob)]
-        [InlineData(TestMessages.CallState)]
-        [InlineData(TestMessages.ConnectEvent)]
-        [InlineData(TestMessages.DisconnectEvent)]
-        [InlineData(TestMessages.PlaybackComplete)]
+        [Test]
+        [TestCase(TestMessages.BackgroundJob)]
+        [TestCase(TestMessages.CallState)]
+        [TestCase(TestMessages.ConnectEvent)]
+        [TestCase(TestMessages.DisconnectEvent)]
+        [TestCase(TestMessages.PlaybackComplete)]
         public void can_parse_test_messages(string input)
         {
             var parser = new Parser();
@@ -41,16 +43,16 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
 
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             var message = parser.ExtractMessage();
-            Assert.NotNull(message);
+            Assert.That(message, Is.Not.Null);
             Console.WriteLine(message.ToString());
         }
 
-        [Theory]
-        [InlineData(TestMessages.BackgroundJob)]
-        [InlineData(TestMessages.CallState)]
+        [Test]
+        [TestCase(TestMessages.BackgroundJob)]
+        [TestCase(TestMessages.CallState)]
         public void it_should_extract_the_body_from_a_message(string input)
         {
             var parser = new Parser();
@@ -60,19 +62,19 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
 
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             BasicMessage payload = parser.ExtractMessage();
-            Assert.Equal(ContentTypes.EventPlain, payload.ContentType);
-            Assert.NotNull(payload.BodyText);
-            Assert.Equal(payload.ContentLength, payload.BodyText.Length);
+            Assert.That(payload.ContentType, Is.EqualTo(ContentTypes.EventPlain));
+            Assert.That(payload.BodyText, Is.Not.Null);
+            Assert.That(payload.BodyText.Length, Is.EqualTo(payload.ContentLength));
 
             Console.WriteLine(payload.ToString());
         }
 
-        [Theory]
-        [InlineData(TestMessages.BackgroundJob, EventName.BackgroundJob)]
-        [InlineData(TestMessages.CallState, EventName.ChannelCallstate)]
+        [Test]
+        [TestCase(TestMessages.BackgroundJob, EventName.BackgroundJob)]
+        [TestCase(TestMessages.CallState, EventName.ChannelCallstate)]
         public void it_should_parse_event_messages(string input, EventName eventName)
         {
             var parser = new Parser();
@@ -82,16 +84,16 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
 
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             var eventMessage = new EventMessage(parser.ExtractMessage());
-            Assert.NotNull(eventMessage);
-            Assert.Equal(eventName, eventMessage.EventName);
+            Assert.That(eventMessage, Is.Not.Null);
+            Assert.That(eventMessage.EventName, Is.EqualTo(eventName));
 
             Console.WriteLine(eventMessage.ToString());
         }
 
-        [Fact]
+        [Test]
         public void it_should_parse_BackgroundJobResult_OK()
         {
             var input = TestMessages.BackgroundJob;
@@ -103,16 +105,16 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
 
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             var backroundJobResult = new BackgroundJobResult(new EventMessage(parser.ExtractMessage()));
-            Assert.NotNull(backroundJobResult);
-            Assert.True(backroundJobResult.Success);
+            Assert.That(backroundJobResult, Is.Not.Null);
+            Assert.That(backroundJobResult.Success, Is.True);
 
             Console.WriteLine(backroundJobResult.ToString());
         }
 
-        [Fact]
+        [Test]
         public void it_should_parse_BackgroundJobResult_ERR()
         {
             var input = TestMessages.BackgroundJobError;
@@ -124,17 +126,17 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
 
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             var backroundJobResult = new BackgroundJobResult(new EventMessage(parser.ExtractMessage()));
-            Assert.NotNull(backroundJobResult);
-            Assert.False(backroundJobResult.Success);
-            Assert.Equal("Error", backroundJobResult.ErrorMessage);
+            Assert.That(backroundJobResult, Is.Not.Null);
+            Assert.That(backroundJobResult.Success, Is.False);
+            Assert.That(backroundJobResult.ErrorMessage, Is.EqualTo("Error"));
 
             Console.WriteLine(backroundJobResult.ToString());
         }
 
-        [Fact]
+        [Test]
         public void it_should_parse_Command_Reply_OK()
         {
             var parser = new Parser();
@@ -145,16 +147,16 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
             
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             var reply = new CommandReply(parser.ExtractMessage());
-            Assert.NotNull(reply);
-            Assert.True(reply.Success);
+            Assert.That(reply, Is.Not.Null);
+            Assert.That(reply.Success, Is.True);
 
             Console.WriteLine(reply);
         }
 
-        [Fact]
+        [Test]
         public void it_should_parse_Command_Reply_ERR()
         {
             var parser = new Parser();
@@ -165,17 +167,17 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
 
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             var reply = new CommandReply(parser.ExtractMessage());
-            Assert.NotNull(reply);
-            Assert.False(reply.Success);
-            Assert.Equal("Error", reply.ErrorMessage);
+            Assert.That(reply, Is.Not.Null);
+            Assert.That(reply.Success, Is.False);
+            Assert.That(reply.ErrorMessage, Is.EqualTo("Error"));
 
             Console.WriteLine(reply);
         }
 
-        [Fact]
+        [Test]
         public void it_should_parse_Api_Response_OK()
         {
             var parser = new Parser();
@@ -186,16 +188,16 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
 
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             var response = new ApiResponse(parser.ExtractMessage());
-            Assert.NotNull(response);
-            Assert.True(response.Success);
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.Success, Is.True);
 
             Console.WriteLine(response);
         }
 
-        [Fact]
+        [Test]
         public void it_should_parse_Api_Response_ERR()
         {
             var parser = new Parser();
@@ -206,17 +208,17 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
 
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             var response = new ApiResponse(parser.ExtractMessage());
-            Assert.NotNull(response);
-            Assert.False(response.Success);
-            Assert.Equal("Error", response.ErrorMessage);
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.Success, Is.False);
+            Assert.That(response.ErrorMessage, Is.EqualTo("Error"));
 
             Console.WriteLine(response);
         }
 
-        [Fact]
+        [Test]
         public void it_should_treat_Api_Response_ERR_no_reply_as_Success()
         {
             var parser = new Parser();
@@ -227,17 +229,17 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
 
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             var response = new ApiResponse(parser.ExtractMessage());
-            Assert.NotNull(response);
-            Assert.True(response.Success);
-            Assert.Equal("no reply", response.ErrorMessage);
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.Success, Is.True);
+            Assert.That(response.ErrorMessage, Is.EqualTo("no reply"));
 
             Console.WriteLine(response);
         }
 
-        [Fact]
+        [Test]
         public void it_should_trim_new_lines_from__the_end_of_ApiResponse_Body_text()
         {
             var parser = new Parser();
@@ -248,19 +250,19 @@ namespace NEventSocket.Tests.Sockets
                 parser.Append(c);
             }
 
-            Assert.True(parser.Completed);
+            Assert.That(parser.Completed, Is.True);
 
             var response = new ApiResponse(parser.ExtractMessage());
-            Assert.NotNull(response);
-            Assert.True(response.Success);
-            Assert.Equal("no reply", response.ErrorMessage);
-            Assert.Equal("-ERR no reply", response.BodyText);
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.Success, Is.True);
+            Assert.That(response.ErrorMessage, Is.EqualTo("no reply"));
+            Assert.That(response.BodyText, Is.EqualTo("-ERR no reply"));
 
             Console.WriteLine(response);
         }
 
-        [Theory]
-        [MemberData(nameof(ExampleSessions))]
+        [Test]
+        [TestCaseSource(nameof(ExampleSessions))]
         public void Can_parse_example_sessions_to_completion(string input)
         {
             if (Environment.GetEnvironmentVariable("APPVEYOR_BUILD_NUMBER") == null)
@@ -283,10 +285,10 @@ namespace NEventSocket.Tests.Sockets
                             }
                         });
 
-            Assert.True(gotDisconnectNotice);
+            Assert.That(gotDisconnectNotice, Is.True);
         }
 
-        [Fact]
+        [Test]
         public void Can_parse_disconnect_notice()
         {
             var msg = @"Content-Type: text/disconnect-notice

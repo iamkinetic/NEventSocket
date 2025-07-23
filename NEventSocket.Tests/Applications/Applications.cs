@@ -2,11 +2,12 @@
 {
     using NEventSocket.FreeSwitch;
 
-    using Xunit;
+    using NUnit.Framework;
 
+    [TestFixture]
     public class Applications
     {
-         [Fact]
+         [Test]
          public void can_build_say_string()
          {
              var options = new SayOptions
@@ -20,10 +21,10 @@
 
              var toString = options.ToString();
 
-             Assert.Equal("en NUMBER iterated FEMININE 1234", toString);
+             Assert.That(toString, Is.EqualTo("en NUMBER iterated FEMININE 1234"));
          }
 
-         [Fact]
+         [Test]
          public void can_build_originate_string()
          {
              var options = new OriginateOptions()
@@ -50,10 +51,10 @@
 
              const string Expected =
                  "<fooE='barE',bazE='widgetsE'>{origination_uuid='985cea12-4e70-4c03-8a2c-2c4b4502bbbb',bypass_media='true',origination_caller_id_name='Test',origination_caller_id_number='12341234',execute_on_originate='start_dtmf',ignore_early_media='true',originate_retries='3',originate_retry_sleep_ms='4000',return_ring_ready='true',originate_timeout='20',hangup_after_bridge='false',foo='bar',baz='widgets'}";
-             Assert.Equal(Expected, toString);
+             Assert.That(toString, Is.EqualTo(Expected));
          }
 
-        [Fact]
+        [Test]
         public void can_build_play_get_digits_string()
         {
             var options = new PlayGetDigitsOptions()
@@ -72,7 +73,7 @@
 
             var toString = options.ToString();
 
-            Assert.Equal(@"4 8 3 4000 # ivr/8000/ivr-please_enter_pin_followed_by_pound.wav ivr/8000/ivr-that_was_an_invalid_entry.wav play_get_digits_result ^(1|2|3|4|5|6|7|8|9|0)+ 2000", toString);
+            Assert.That(toString, Is.EqualTo(@"4 8 3 4000 # ivr/8000/ivr-please_enter_pin_followed_by_pound.wav ivr/8000/ivr-that_was_an_invalid_entry.wav play_get_digits_result ^(1|2|3|4|5|6|7|8|9|0)+ 2000"));
           }
     }
 }

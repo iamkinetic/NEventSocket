@@ -41,7 +41,7 @@
                          {"e2" , "ev2"}
                     }
                 }.ToString();
-            Assert.That(options, Does.Contain("<e1='ev1',e2='ev2'>"));
+            Assert.That(options, Does.Contain("{e1='ev1',e2='ev2'}"));
         }
 
         [Test]
@@ -52,7 +52,7 @@
                               EnterpriseChannelVariables = new Dictionary<string, string> { { "e1", "ev1" }, { "e2", "ev2" } },
                               ChannelVariables = new Dictionary<string, string> { { "c1", "cv1" }, { "c2", "cv2" } }
                           }.ToString();
-            Assert.That(options, Does.Contain("<e1='ev1',e2='ev2'>{c1='cv1',c2='cv2'}"));
+            Assert.That(options, Does.Contain("{e1='ev1',e2='ev2',c1='cv1',c2='cv2'}"));
         }
 
         [Test]

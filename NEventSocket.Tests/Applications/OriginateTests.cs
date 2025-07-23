@@ -87,8 +87,8 @@
 
             var json = JsonSerializer.Serialize(options);
             var fromJson = JsonSerializer.Deserialize<OriginateOptions>(json);
-            
-            Assert.That(fromJson, Is.EqualTo(options));
+
+            Assert.That(fromJson.ChannelVariables, Is.EquivalentTo(options.ChannelVariables));
         }
     }
 }

@@ -333,7 +333,7 @@ namespace NEventSocket.FreeSwitch
         /// <summary>
         /// Container for any Channel Variables to be set on the A-Leg before executing the bridge
         /// </summary>
-        public IDictionary<string, string> ChannelVariables { get; private set; }
+        public IDictionary<string, string> ChannelVariables { get; set; }
 
         /// <summary>
         /// Implements the operator ==.

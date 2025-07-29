@@ -56,6 +56,17 @@
         }
 
         [Test]
+        public void must_escape_enterprise_channel_variables()
+        {
+            var options = new OriginateOptions
+                          {
+                              EnterpriseChannelVariables = new Dictionary<string, string> { { "e1", "<incident1>ev1</incident1>" }, { "e2", "<incident2>ev2</incident2>" } },
+                              ChannelVariables = new Dictionary<string, string> { { "c1", "cv1" }, { "c2", "cv2" } }
+                          }.ToString();
+            Assert.That(options, Does.Contain("<e1='\\<incident1\\>ev1\\</incident1\\>',e2='\\<incident2\\>ev2\\</incident2\\>'>{c1='cv1',c2='cv2'}"));
+        }
+
+        [Test]
         public void can_set_caller_id_type()
         {
             var options = new OriginateOptions() { SipCallerIdType = SipCallerIdType.RPid }.ToString();

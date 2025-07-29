@@ -289,7 +289,7 @@ namespace NEventSocket.FreeSwitch
 
             sb.Append("<");
 
-            sb.Append(EnterpriseChannelVariables.ToOriginateString());
+            sb.Append(EnterpriseChannelVariables.EscapeValues(new[] { '<', '>' }).ToOriginateString());
 
             if (sb.Length > 1)
             {

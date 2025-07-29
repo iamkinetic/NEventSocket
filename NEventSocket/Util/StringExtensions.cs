@@ -226,5 +226,41 @@ namespace NEventSocket.Util
 
             return StringBuilderPool.ReturnAndFree(sb);
         }
+
+        public static IDictionary<string, string> EscapeValues(this IDictionary<string, string> dictionary, IEnumerable<char> charactersToEscape)
+        {
+            if (dictionary == null)
+                throw new ArgumentNullException(nameof(dictionary));
+
+            if (charactersToEscape == null)
+                throw new ArgumentNullException(nameof(charactersToEscape));
+
+            var escapeSet = charactersToEscape as HashSet<char> ?? [.. charactersToEscape];
+            var result = new Dictionary<string, string>();
+
+            foreach (var kvp in dictionary)
+            {
+                var escapedValue = kvp.Value != null ? EscapeString(kvp.Value, escapeSet) : kvp.Value;
+                result[kvp.Key] = escapedValue;
+            }
+
+            return result;
+        }
+
+        private static string EscapeString(string input, HashSet<char> charactersToEscape)
+        {
+            var sb = StringBuilderPool.Allocate();
+
+            foreach (char c in input)
+            {
+                if (charactersToEscape.Contains(c))
+                {
+                    sb.Append('\\');
+                }
+                sb.Append(c);
+            }
+
+            return StringBuilderPool.ReturnAndFree(sb);
+        }
     }
 }

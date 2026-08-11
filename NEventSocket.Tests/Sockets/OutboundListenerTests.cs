@@ -1,6 +1,7 @@
 ﻿namespace NEventSocket.Tests.Sockets
 {
     using System;
+    using System.Net;
     using System.Net.Sockets;
     using System.Threading.Tasks;
 
@@ -242,6 +243,30 @@
 
                 listener.Dispose();
                 await Wait.Until(() => listener.IsStarted == false);
+            }
+        }
+
+        [Test]
+        public void Listener_with_no_address_binds_to_IPAddress_Any()
+        {
+            using (var listener = new OutboundListener(0))
+            {
+                listener.Start();
+                Assert.That(listener.Address, Is.EqualTo(IPAddress.Any));
+            }
+        }
+
+        [Test, CancelAfter(2000)]
+        public async Task Listener_can_be_bound_to_a_specific_address()
+        {
+            using (var listener = new OutboundListener(IPAddress.Loopback, 0))
+            {
+                listener.Start();
+                Assert.That(listener.Address, Is.EqualTo(IPAddress.Loopback));
+
+                using var client = new TcpClient();
+                await client.ConnectAsync(IPAddress.Loopback, listener.Port);
+                Assert.That(client.Connected, Is.True);
             }
         }
 

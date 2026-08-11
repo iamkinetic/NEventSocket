@@ -6,6 +6,7 @@
 namespace NEventSocket
 {
     using System;
+    using System.Net;
     using System.Reactive.Linq;
 
     using Microsoft.Extensions.Logging;
@@ -24,19 +25,32 @@ namespace NEventSocket
         private readonly IObservable<Channel> channels;
 
         /// <summary>
+        /// Initializes a new OutboundListener on the given address and port.
+        /// </summary>
+        /// <param name="address">The TCP address to listen on.</param>
+        /// <param name="port">The TCP port to listen on. Pass 0 to auto-assign a dynamic port.</param>
+        public OutboundListener(IPAddress address, int port) : base(address, port, tcpClient => new OutboundSocket(tcpClient))
+        {
+            channels = CreateChannels();
+        }
+
+        /// <summary>
         /// Initializes a new OutboundListener on the given port.
         /// Pass 0 as the port to auto-assign a dynamic port. Usually used for testing.
         /// </summary>
         /// <param name="port">The Tcp port to listen on.</param>
         public OutboundListener(int port) : base(port, tcpClient => new OutboundSocket(tcpClient))
         {
-            channels = Connections.SelectMany(
-                    async socket =>
-                    {
-                        await socket.Connect().ConfigureAwait(false);
-                        return await Channel.Create(socket).ConfigureAwait(false);
-                    });
+            channels = CreateChannels();
         }
+
+        private IObservable<Channel> CreateChannels() =>
+            Connections.SelectMany(
+                async socket =>
+                {
+                    await socket.Connect().ConfigureAwait(false);
+                    return await Channel.Create(socket).ConfigureAwait(false);
+                });
 
         /// <summary>
         /// Gets an observable sequence of incoming calls wrapped as <seealso cref="Channel"/> abstractions.

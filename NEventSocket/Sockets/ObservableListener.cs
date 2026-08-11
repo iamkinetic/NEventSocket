@@ -29,6 +29,7 @@ namespace NEventSocket.Sockets
         private readonly List<T> connections = new List<T>();
         private readonly Subject<T> observable = new Subject<T>();
         private readonly CompositeDisposable disposables = new CompositeDisposable();
+        private readonly IPAddress address;
         private readonly int port;
         private readonly Func<TcpClient, T> observableSocketFactory;
         private readonly InterlockedBoolean disposed = new InterlockedBoolean();
@@ -44,16 +45,25 @@ namespace NEventSocket.Sockets
         }
 
         /// <summary>
+        /// Starts the Listener on the given address and port
+        /// </summary>
+        /// <param name="address">The Tcp Address on which to listen for incoming connections.</param>
+        /// <param name="port">The Tcp Port on which to listen for incoming connections.</param>
+        /// <param name="observableSocketFactory">A function returning an object that inherits from <seealso cref="ObservableSocket" />.</param>
+        protected ObservableListener(IPAddress address, int port, Func<TcpClient, T> observableSocketFactory)
+        {
+            log = Logger.Get<ObservableListener<T>>();
+            this.address = address;
+            this.port = port;
+            this.observableSocketFactory = observableSocketFactory;
+        }
+
+        /// <summary>
         /// Starts the Listener on the given port
         /// </summary>
         /// <param name="port">The Tcp Port on which to listen for incoming connections.</param>
         /// <param name="observableSocketFactory">A function returning an object that inherits from <seealso cref="ObservableSocket" />.</param>
-        protected ObservableListener(int port, Func<TcpClient, T> observableSocketFactory)
-        {
-            log = Logger.Get<ObservableListener<T>>();
-            this.port = port;
-            this.observableSocketFactory = observableSocketFactory;
-        }
+        protected ObservableListener(int port, Func<TcpClient, T> observableSocketFactory) : this(IPAddress.Any, port, observableSocketFactory) { }
 
         /// <summary>
         /// Finalizes an instance of the <see cref="ObservableListener{T}"/> class.
@@ -67,6 +77,11 @@ namespace NEventSocket.Sockets
         /// Gets an observable sequence of all outbound connections from FreeSwitch.
         /// </summary>
         public IObservable<T> Connections => observable;
+
+        /// <summary>
+        /// Gets the Tcp Address that the Listener is waiting for connections on.
+        /// </summary>
+        public IPAddress Address => ((IPEndPoint)tcpListener.LocalEndpoint).Address;
 
         /// <summary>
         /// Gets the Tcp Port that the Listener is waiting for connections on.
@@ -90,7 +105,7 @@ namespace NEventSocket.Sockets
                 return;
             }
 
-            tcpListener = new TcpListener(IPAddress.Any, port);
+            tcpListener = new TcpListener(address, port);
 
             tcpListener.Start();
 
